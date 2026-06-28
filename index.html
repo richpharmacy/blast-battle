@@ -476,20 +476,17 @@ function updateLook(t){
   lookInput.x=dx/STICK_MAX; lookInput.y=dy/STICK_MAX;
 }
 
-// buttons
-function bindHold(id, downFn){
+// buttons — stopPropagation so the global stick touch handler never eats the tap
+function bindBtn(id, fn){
   const el = document.getElementById(id);
-  const d = e=>{ e.preventDefault(); downFn(); };
+  const d = e=>{ e.preventDefault(); e.stopPropagation(); fn(); };
   el.addEventListener('touchstart', d, {passive:false});
   el.addEventListener('mousedown', d);
 }
-bindHold('fire', fire);
-document.getElementById('jump').addEventListener('touchstart', e=>{e.preventDefault();jump();},{passive:false});
-document.getElementById('jump').addEventListener('mousedown', e=>{e.preventDefault();jump();});
-document.getElementById('dash').addEventListener('touchstart', e=>{e.preventDefault();dash();},{passive:false});
-document.getElementById('dash').addEventListener('mousedown', e=>{e.preventDefault();dash();});
-document.getElementById('bomb').addEventListener('touchstart', e=>{e.preventDefault();armBomb();},{passive:false});
-document.getElementById('bomb').addEventListener('mousedown', e=>{e.preventDefault();armBomb();});
+bindBtn('fire', fire);
+bindBtn('jump', jump);
+bindBtn('dash', dash);
+bindBtn('bomb', armBomb);
 
 document.querySelectorAll('.wpn').forEach(el=>{
   const sw = e=>{ e.preventDefault(); setWeapon(+el.dataset.w); };
@@ -512,10 +509,11 @@ function setWeapon(i){
 function jump(){
   if (mode!=='battle') return;
   if (player.jumpsLeft > 0){
-    // second (air) jump a touch weaker so it feels like a boost
-    player.vel.y = player.onGround ? 9.5 : 8.5;
+    // strong, clearly visible jump; double jump = full second boost
+    player.vel.y = 13;
     player.onGround = false;
     player.jumpsLeft--;
+    if(player.jumpsLeft===0) banner('DOUBLE JUMP', '', 350);
   }
 }
 function dash(){
