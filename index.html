@@ -48,12 +48,13 @@
   @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
 
   /* left look/move joystick zone */
-  #moveStick { position: fixed; left: 22px; bottom: 30px; width: 150px; height: 150px; z-index: 11; pointer-events:auto; }
-  #stickBase { position:absolute; inset:0; border-radius:50%; background: rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.18); }
-  #stickKnob { position:absolute; left:50%; top:50%; width:60px; height:60px; margin:-30px 0 0 -30px; border-radius:50%; background: rgba(140,180,255,.55); border:2px solid rgba(220,235,255,.6); }
-  #moveLabel { position:absolute; left:50%; bottom:-20px; transform:translateX(-50%); color:#9ab; font-size:11px; white-space:nowrap; }
-
-  #lookHint { position: fixed; right: 14px; top: 50%; transform: translateY(-50%); color:#567; font-size:11px; writing-mode: vertical-rl; z-index: 9; pointer-events:none; }
+  .stick { position: fixed; bottom: 30px; width: 150px; height: 150px; z-index: 11; pointer-events:auto; }
+  #moveStick { left: 22px; }
+  #lookStick { right: 22px; bottom: 235px; width: 130px; height: 130px; }
+  .stickBase { position:absolute; inset:0; border-radius:50%; background: rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.18); }
+  .stickKnob { position:absolute; left:50%; top:50%; width:60px; height:60px; margin:-30px 0 0 -30px; border-radius:50%; background: rgba(140,180,255,.55); border:2px solid rgba(220,235,255,.6); }
+  #lookStick .stickKnob { background: rgba(180,140,255,.55); }
+  .stickLabel { position:absolute; left:50%; bottom:-20px; transform:translateX(-50%); color:#9ab; font-size:11px; white-space:nowrap; }
 
   #startBtn { position: fixed; left:50%; top:52%; transform:translate(-50%,-50%); z-index:13; pointer-events:auto;
     padding:14px 30px; border-radius:14px; font-size:18px; font-weight:800; color:#03121f;
@@ -93,12 +94,16 @@
   <div class="wpn" data-w="2"><span class="n">3</span><span>Nova</span></div>
 </div>
 
-<div id="moveStick">
-  <div id="stickBase"></div>
-  <div id="stickKnob"></div>
-  <div id="moveLabel">MOVE</div>
+<div class="stick" id="moveStick">
+  <div class="stickBase"></div>
+  <div class="stickKnob"></div>
+  <div class="stickLabel">MOVE</div>
 </div>
-<div id="lookHint">DRAG RIGHT SIDE = LOOK</div>
+<div class="stick" id="lookStick">
+  <div class="stickBase"></div>
+  <div class="stickKnob"></div>
+  <div class="stickLabel">LOOK / AIM</div>
+</div>
 
 <button class="btn" id="fire">FIRE</button>
 <button class="btn" id="jump">JUMP</button>
@@ -303,52 +308,55 @@ addEventListener('mousemove', e=>{
 });
 renderer.domElement.addEventListener('click', ()=>{ if(mode==='battle') fire(); else if(mode==='lobby') tryEnterPortal(); });
 
-// touch: left stick = move, right half drag = look
+// touch: dual virtual sticks — left = move, right = look/aim
 const moveStick = document.getElementById('moveStick');
-const knob = document.getElementById('stickKnob');
+const moveKnob = moveStick.querySelector('.stickKnob');
+const lookStick = document.getElementById('lookStick');
+const lookKnob = lookStick.querySelector('.stickKnob');
 let moveTouchId=null; const moveInput={x:0,y:0};
-let lookTouchId=null, lookLX=0, lookLY=0;
+let lookTouchId=null; const lookInput={x:0,y:0};
 
 function isUI(t){ return t.closest && (t.closest('.btn')||t.closest('#weapons')||t.closest('#startBtn')); }
+
+// pick which stick a touch belongs to by screen side, anchored at touch point
+let moveOrigin={x:0,y:0}, lookOrigin={x:0,y:0};
 
 addEventListener('touchstart', e=>{
   for(const t of e.changedTouches){
     if (isUI(t.target)) continue;
-    if (moveStick.contains(t.target) || (t.clientX < innerWidth*0.45 && t.clientY > innerHeight*0.45)){
-      if(moveTouchId===null){ moveTouchId=t.identifier; updateStick(t); }
-    } else if (t.clientX > innerWidth*0.5){
-      if(lookTouchId===null){ lookTouchId=t.identifier; lookLX=t.clientX; lookLY=t.clientY; }
+    if (t.clientX < innerWidth*0.5){
+      if(moveTouchId===null){ moveTouchId=t.identifier; moveOrigin={x:t.clientX,y:t.clientY}; updateMove(t); }
+    } else {
+      if(lookTouchId===null){ lookTouchId=t.identifier; lookOrigin={x:t.clientX,y:t.clientY}; updateLook(t); }
     }
   }
 }, {passive:false});
 addEventListener('touchmove', e=>{
   for(const t of e.changedTouches){
-    if(t.identifier===moveTouchId) updateStick(t);
-    else if(t.identifier===lookTouchId){
-      const dx=t.clientX-lookLX, dy=t.clientY-lookLY; lookLX=t.clientX; lookLY=t.clientY;
-      player.yaw   -= dx*0.005;
-      player.pitch -= dy*0.004;
-      player.pitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, player.pitch));
-    }
+    if(t.identifier===moveTouchId) updateMove(t);
+    else if(t.identifier===lookTouchId) updateLook(t);
   }
   if(moveTouchId!==null||lookTouchId!==null) e.preventDefault();
 }, {passive:false});
 addEventListener('touchend', e=>{
   for(const t of e.changedTouches){
-    if(t.identifier===moveTouchId){ moveTouchId=null; moveInput.x=0; moveInput.y=0; knob.style.transform='translate(0,0)'; }
-    if(t.identifier===lookTouchId){ lookTouchId=null; }
+    if(t.identifier===moveTouchId){ moveTouchId=null; moveInput.x=0; moveInput.y=0; moveKnob.style.transform='translate(0,0)'; }
+    if(t.identifier===lookTouchId){ lookTouchId=null; lookInput.x=0; lookInput.y=0; lookKnob.style.transform='translate(0,0)'; }
   }
 }, {passive:false});
 
-function updateStick(t){
-  const r = moveStick.getBoundingClientRect();
-  let dx = t.clientX - (r.left+r.width/2);
-  let dy = t.clientY - (r.top+r.height/2);
-  const max = r.width/2;
-  const len = Math.hypot(dx,dy);
-  if(len>max){ dx*=max/len; dy*=max/len; }
-  knob.style.transform = `translate(${dx}px,${dy}px)`;
-  moveInput.x = dx/max; moveInput.y = dy/max;
+const STICK_MAX = 70;
+function updateMove(t){
+  let dx=t.clientX-moveOrigin.x, dy=t.clientY-moveOrigin.y;
+  const len=Math.hypot(dx,dy); if(len>STICK_MAX){ dx*=STICK_MAX/len; dy*=STICK_MAX/len; }
+  moveKnob.style.transform=`translate(${dx}px,${dy}px)`;
+  moveInput.x=dx/STICK_MAX; moveInput.y=dy/STICK_MAX;
+}
+function updateLook(t){
+  let dx=t.clientX-lookOrigin.x, dy=t.clientY-lookOrigin.y;
+  const len=Math.hypot(dx,dy); if(len>STICK_MAX){ dx*=STICK_MAX/len; dy*=STICK_MAX/len; }
+  lookKnob.style.transform=`translate(${dx}px,${dy}px)`;
+  lookInput.x=dx/STICK_MAX; lookInput.y=dy/STICK_MAX;
 }
 
 // buttons
@@ -485,6 +493,13 @@ function animate(){
 
   // continuous fire when held
   if (fireHeld && mode==='battle') fire();
+
+  // right virtual stick = look / aim
+  if (lookInput.x!==0 || lookInput.y!==0){
+    player.yaw   -= lookInput.x * 2.6 * dt;
+    player.pitch -= lookInput.y * 2.0 * dt;
+    player.pitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, player.pitch));
+  }
 
   if (mode==='battle' || mode==='lobby'){
     // movement
