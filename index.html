@@ -181,6 +181,7 @@ const player = {
   vel: new THREE.Vector3(),
   yaw: 0, pitch: 0,
   onGround: true,
+  jumpsLeft: 2, maxJumps: 2,
   hp: 100, maxHp: 100,
   dashCd: 0, dashTime: 0, dashDir: new THREE.Vector3(),
   weapon: 0, fireCd: 0,
@@ -394,7 +395,12 @@ function setWeapon(i){
 }
 function jump(){
   if (mode!=='battle') return;
-  if (player.onGround){ player.vel.y = 9.5; player.onGround=false; }
+  if (player.jumpsLeft > 0){
+    // second (air) jump a touch weaker so it feels like a boost
+    player.vel.y = player.onGround ? 9.5 : 8.5;
+    player.onGround = false;
+    player.jumpsLeft--;
+  }
 }
 function dash(){
   if (mode!=='battle' || player.dashCd>0) return;
@@ -525,7 +531,7 @@ function animate(){
     // gravity / jump
     player.vel.y -= 26*dt;
     player.pos.y += player.vel.y*dt;
-    if(player.pos.y <= EYE){ player.pos.y=EYE; player.vel.y=0; player.onGround=true; }
+    if(player.pos.y <= EYE){ player.pos.y=EYE; player.vel.y=0; player.onGround=true; player.jumpsLeft=player.maxJumps; }
 
     // arena bounds
     const horiz = new THREE.Vector2(player.pos.x, player.pos.z);
