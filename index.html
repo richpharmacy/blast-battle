@@ -247,9 +247,9 @@ function spawnEnemy(){
   g.position.set(Math.cos(a)*r, 0, Math.sin(a)*r);
   const throwsBombs = Math.random() < 0.3;  // ~30% are bombers
   g.userData = {
-    hp: 55, speed: 2.6+Math.random()*1.4, mat: bodyMat, baseColor: col, hitFlash:0,
-    shootCd: 1.0 + Math.random()*1.5,
-    bombCd: 4 + Math.random()*4,
+    hp: 55, speed: 1.5+Math.random()*0.9, mat: bodyMat, baseColor: col, hitFlash:0,
+    shootCd: 1.8 + Math.random()*2.0,
+    bombCd: 6 + Math.random()*5,
     throwsBombs,
     preferDist: 12 + Math.random()*8,   // keeps its distance like a gunner
     muzzle: gun,
@@ -273,7 +273,7 @@ function enemyShoot(e, dmgMul, spread){
   const b = new THREE.Mesh(new THREE.SphereGeometry(isKing?0.35:0.22,8,8), new THREE.MeshBasicMaterial({color:col}));
   b.position.copy(muzzleWorld);
   const light = new THREE.PointLight(col, 1.0, 5); b.add(light);
-  b.userData = { dir, speed: isKing?44:36, dmg: 9*dmgMul, life: 3 };
+  b.userData = { dir, speed: isKing?24:18, dmg: 9*dmgMul, life: 4.5 };
   scene.add(b); enemyBullets.push(b);
 }
 
@@ -333,8 +333,8 @@ function spawnKing(){
   gun.position.set(1.3,2.8,1.1); g.add(gun);
   g.position.set(0,0,-30);
   g.userData = {
-    isKing:true, hp: 1200, maxHp:1200, speed: 3.4, mat, baseColor:col, hitFlash:0,
-    shootCd: 1.2, bombCd: 3.5, throwsBombs:true, preferDist: 14, muzzle: gun, burst:0,
+    isKing:true, hp: 1200, maxHp:1200, speed: 1.9, mat, baseColor:col, hitFlash:0,
+    shootCd: 1.8, bombCd: 5, throwsBombs:true, preferDist: 14, muzzle: gun, burst:0,
   };
   scene.add(g); enemies.push(g); king = g;
   // boss HP bar
@@ -776,10 +776,10 @@ function animate(){
       if(u.isKing){
         // King: rapid burst fire + spread
         if(u.shootCd <= 0){
-          enemyShoot(e, 1.5, 16);
+          enemyShoot(e, 1.2, 16);
           u.burst = (u.burst||0);
           u.burst++;
-          u.shootCd = (u.burst % 3 === 0) ? 1.6 : 0.18;
+          u.shootCd = (u.burst % 3 === 0) ? 2.4 : 0.45;
         }
         u.bombCd -= dt;
         if(d < 40 && u.bombCd <= 0){ enemyThrowBomb(e); u.bombCd = 3.5; }
