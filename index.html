@@ -71,6 +71,7 @@
   <div class="panel" id="topLeft">
     <div>MODE: <b id="modeTxt">LOBBY</b></div>
     <div>WEAPON: <b id="wpnTxt">Pulse</b></div>
+    <div style="margin-top:6px;">HP <b id="hpNum" style="color:#7fffa0;font-size:16px;">100</b> <span style="color:#789;">/ 100</span></div>
     <div id="hpWrap"><div id="hpBar"></div></div>
   </div>
   <div class="panel" id="topRight">
@@ -528,7 +529,11 @@ function damagePlayer(d){
   if(mode!=='battle') return;
   player.hp -= d;
   if(player.hp<=0){ player.hp=0; gameOver(); }
-  document.getElementById('hpBar').style.width = (player.hp/player.maxHp*100)+'%';
+  const pct = player.hp/player.maxHp*100;
+  document.getElementById('hpBar').style.width = pct+'%';
+  const hpNum = document.getElementById('hpNum');
+  hpNum.textContent = Math.ceil(player.hp);
+  hpNum.style.color = pct>50 ? '#7fffa0' : pct>25 ? '#ffd34d' : '#ff5a5a';
 }
 function gameOver(){
   mode='dead';
